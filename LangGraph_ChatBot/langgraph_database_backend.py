@@ -6,6 +6,9 @@ from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 from dotenv import load_dotenv
 import sqlite3
+import os
+
+os.environ['LANGSMITH_PROJECT']="ChatBot Project"
 
 load_dotenv()
 llm=ChatGoogleGenerativeAI(model="gemini-2.5-flash")
@@ -65,19 +68,15 @@ def delete_thread(thread_id: str):
     conn.commit()
 
 
-# def clear_all_threads_and_checkpoints(conn: sqlite3.Connection):
-#     try:
-#         with conn:  # ensures atomic transaction
-#             # Clear your custom threads table
-#             conn.execute("DELETE FROM threads")
+def clear_all_threads_and_checkpoints():
+    try:
+        with conn:  # ensures atomic transaction
+            # Clear your custom threads table
+            conn.execute("DELETE FROM threads")
             
-#             # Clear LangGraph checkpoint tables
-#             conn.execute("DELETE FROM checkpoints")
-#             # conn.execute("DELETE FROM checkpoint_blobs")
-#             # conn.execute("DELETE FROM checkpoint_writes")
+            # Clear LangGraph checkpoint tables
+            conn.execute("DELETE FROM checkpoints")
         
-#         print("✅ All threads and checkpoints cleared.")
-#     except Exception as e:
-#         print(f"⚠️ Error while clearing: {e}")
-
-# clear_all_threads_and_checkpoints(conn)
+        print("✅ All threads and checkpoints cleared.")
+    except Exception as e:
+        print(f"⚠️ Error while clearing: {e}")

@@ -1,6 +1,6 @@
 import uuid
 import streamlit as st
-from langgraph_database_backend import chatbot, retrieve_all_threads, save_thread, delete_thread, retrieve_state_threads
+from langgraph_database_backend import chatbot, retrieve_all_threads, save_thread, delete_thread, retrieve_state_threads, clear_all_threads_and_checkpoints
 from langchain_core.messages import HumanMessage
 
 FIRST_MESSAGE={"role": "system", "content": "Let's start chatting! 👇"}
@@ -10,6 +10,10 @@ def generate_thread_id():
 def add_thread(thread_id,title="New Chat"):
     if thread_id not in st.session_state.threads:
         st.session_state.threads[thread_id] = title
+        st.session_state.active_thread=thread_id
+        st.session_state.messages=[FIRST_MESSAGE]
+        st.rerun()
+        
 
 def load_conversation(thread_id):
     try:
@@ -52,7 +56,11 @@ if "threads" not in st.session_state:
     st.session_state.rename_mode = False   
 
 active_thread = st.session_state.active_thread
-CONFIG = {'configurable': {'thread_id': active_thread}}
+CONFIG = {
+    'configurable': {'thread_id': active_thread},
+    'metadata': {"thread_id": st.session_state.threads[st.session_state.active_thread]},
+    'run_name': "chat_turn"
+    }
 
 with st.sidebar:
     st.title("My Conversations")
@@ -76,6 +84,11 @@ with st.sidebar:
             
                 st.rerun()
     
+    if st.button("🧹 Clear All Chats"):
+        clear_all_threads_and_checkpoints()
+        st.session_state.clear()
+        st.rerun()
+    
     if st.button("✏️ Rename Chat"):
         st.session_state.rename_mode= True
         st.rerun()
@@ -90,7 +103,7 @@ with st.sidebar:
         col3, col4 = st.columns([1,1])
         with col3:
             if st.button("✅ Save", key="rename_save"):
-                save_thread(st.session_state.active_thread, new_name) 
+                # save_thread(st.session_state.active_thread, new_name) 
                 st.session_state.threads[st.session_state.active_thread] = new_name
                 st.session_state.rename_mode = False
                 st.rerun()
@@ -126,7 +139,7 @@ if user_input := st.chat_input("What is up?"):
     
     state_threads = retrieve_state_threads()
     if active_thread not in state_threads:
-        save_thread(active_thread)
+        save_thread(active_thread,st.session_state.threads[st.session_state.active_thread])
 
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
