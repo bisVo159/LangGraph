@@ -8,7 +8,6 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_tavily import TavilySearch
 from langchain_core.tools import tool
-from pydantic import create_model, Field
 from dotenv import load_dotenv
 import aiosqlite
 import httpx
@@ -19,7 +18,7 @@ DB_PATH = "ChatBot.db"
 _CACHED_TOOLS = None
 _GRAPH_BUILDER = None
 
-llm=ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+llm=ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
 
 search_tool = TavilySearch(max_results=2)
 
@@ -53,29 +52,8 @@ async def get_stock_price(symbol: str) -> dict:
         return r.json()
 
 def fix_mcp_tool(tool):
-    """
-    1. Forces schema to use explicit strings (fixes Gemini compatibility).
-    2. Enables error handling (prevents crashes if AI sends bad data).
-    """
     tool.handle_tool_error = True 
-    
-    if not hasattr(tool, "args_schema") or tool.args_schema is None:
-        return tool
-    
-    try:
-        schema = tool.args_schema
-        fields = getattr(schema, "model_fields", getattr(schema, "__fields__", {}))
-        
-        new_fields = {}
-        for name, field_info in fields.items():
-            desc = getattr(field_info, "description", None) or f"Parameter {name}"
-            new_fields[name] = (str, Field(description=desc))
-            
-        new_schema = create_model(f"{tool.name}Schema", **new_fields)
-        tool.args_schema = new_schema
-    except Exception as e:
-        print(f"Warning: Could not fix schema for {tool.name}: {e}")
-    
+
     return tool
 
 class ChatState(TypedDict):
